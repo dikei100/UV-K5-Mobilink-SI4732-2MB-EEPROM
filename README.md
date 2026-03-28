@@ -1,17 +1,87 @@
-# Open re-implementation of the Quansheng UV-K5/K6/5R v2.1.27 firmware
+# UV-K5 Mobilink + SI4732 + 2MB EEPROM
 
-This repository is a merge of [OneOfEleven custom firmware](https://github.com/OneOfEleven/uv-k5-firmware-custom) with [fagci spectrum analizer](https://github.com/fagci/uv-k5-firmware-fagci-mod/tree/refactor) plus my few changes.<br>
-All is a cloned and customized version of DualTachyon's open firmware found [here](https://github.com/DualTachyon/uv-k5-firmware) ... a cool achievement !
+Fork of [mobilinkd/uv-k5-firmware-custom](https://github.com/mobilinkd/uv-k5-firmware-custom) with support for the **SI4732 multi-mode receiver module** and **2MB (2Mbit / 256KB) EEPROM** hardware modifications.
 
-> [!TIP]
-> There is a work done by others on forks of this repository. I encourage you to take a look at those too. [SEE HERE](https://github.com/egzumer/uv-k5-firmware-custom/discussions/485)
+Based on the open re-implementation of the Quansheng UV-K5/K6/5R v2.1.27 firmware, which is a merge of [OneOfEleven custom firmware](https://github.com/OneOfEleven/uv-k5-firmware-custom) with [fagci spectrum analyzer](https://github.com/fagci/uv-k5-firmware-fagci-mod/tree/refactor).<br>
+All originally a cloned and customized version of DualTachyon's open firmware found [here](https://github.com/DualTachyon/uv-k5-firmware) ... a cool achievement!
 
-> [!WARNING]  
+> [!WARNING]
 > Use this firmware at your own risk (entirely). There is absolutely no guarantee that it will work in any way shape or form on your radio(s), it may even brick your radio(s), in which case, you'd need to buy another radio.
 Anyway, have fun.
 
+## Hardware Modifications Required
+
+This firmware is designed for UV-K5/K6 radios with these specific hardware mods:
+
+1. **SI4732-A10 module** installed in place of the stock BK1080 FM receiver chip
+2. **M24M02 EEPROM** (2Mbit / 256KB) replacing the stock BL24C64 (8KB)
+
+If your radio does **not** have these mods, build with `ENABLE_SI4732=0` to use the stock BK1080 FM chip and 8KB EEPROM.
+
+## What Was Changed
+
+### SI4732 Multi-Mode Receiver
+
+The SI4732 driver was ported from the [fagci/uvk5-fagci-reborn](https://github.com/fagci/uvk5-fagci-reborn) firmware and adapted for the mobilinkd codebase. It replaces the BK1080 FM broadcast receiver with a much more capable chip:
+
+- **FM broadcast reception** (64-108 MHz) with RDS support
+- **AM reception** (LW/MW/SW bands) with automatic gain control
+- **SSB reception** (LSB/USB) via firmware patch loaded from EEPROM
+- **BFO adjustment** for SSB fine-tuning
+- **Automatic hardware detection** at boot (probes I2C bus to distinguish SI4732 from BK1080)
+- **SSB firmware patch** (15,832 bytes) stored at end of EEPROM, validated via preamble signature
+
+The SI4732 communicates via I2C (address 0x22) on the same bus as the EEPROM, reusing the BK1080 reset pin on GPIOB.
+
+### 2MB EEPROM Support
+
+The EEPROM driver was rewritten to support large I2C EEPROMs (up to 256KB):
+
+- **32-bit addressing** (was 16-bit, limited to 64KB)
+- **I2C bank switching** via device address bits: `0xA0 | ((address >> 16) << 1)`
+- **Variable page-aligned writes** with configurable page sizes (32-256 bytes per EEPROM type)
+- **Read-before-write optimization** to reduce EEPROM wear
+- **8 supported EEPROM types**: BL24C64 (8KB), BL24C128 (16KB), BL24C256 (32KB), BL24C512 (64KB), BL24C1024 (128KB), M24M02 (256KB)
+
+The extra EEPROM space is used for the SI4732 SSB firmware patch and can accommodate many more memory channels in the future.
+
+### Files Modified / Created
+
+| File | Change |
+|------|--------|
+| `driver/si473x.c` | **NEW** - SI4732 I2C driver (FM/AM/SSB/RDS/seek/AGC/BFO) |
+| `driver/si473x.h` | **NEW** - SI4732 types, commands, properties, function declarations |
+| `driver/eeprom.c/h` | Rewritten for 32-bit addressing, variable page writes, bank switching |
+| `settings.c/h` | EEPROM size tables, SSB patch validation, `SETTINGS_GetEEPROMSize()` |
+| `app/fm.c` | Abstraction layer: `FM_SetFrequency()`, `FM_ChipInit()`, etc. |
+| `radio.c/h` | `RADIO_HasSi()` hardware detection |
+| `audio.c` | SI4732 mute via volume control |
+| `board.c`, `functions.c`, `app/app.c`, `app/action.c` | BK1080 calls wrapped with `#ifdef ENABLE_SI4732` |
+| `ui/fmradio.c` | Frequency limits adapted for SI4732 |
+| `Makefile` | `ENABLE_SI4732` flag, conditional compilation |
+| `main.c` | SI4732 detection and SSB patch check at startup |
+
+### Build Flag
+
+| Build option | Description |
+|---|---|
+| `ENABLE_SI4732` | Use SI4732 instead of BK1080 for FM/AM/SSB reception (default: **1**) |
+
+## Resources Used
+
+The SI4732 driver and EEPROM architecture were ported/adapted from:
+
+- **[fagci/uvk5-fagci-reborn](https://github.com/fagci/uvk5-fagci-reborn)** - Primary reference for SI4732 driver (`src/driver/si473x.c/h`), EEPROM driver with bank switching (`src/driver/eeprom.c`), EEPROM size configuration (`src/settings.c`), radio selector logic (`src/radio.c`), and SSB patch management
+- **[losehu/uv-k5-firmware-custom](https://github.com/losehu/uv-k5-firmware-custom)** - Reference for EEPROM memory layout with SI4732 patch storage
+- **[phdlee/uvk5cec](https://github.com/phdlee/uvk5cec)** - Reference for SI4732-A10 hardware integration approach
+- **[pu2clr/SI4735](https://github.com/pu2clr/SI4735)** - SI47XX Arduino library documentation for command/property reference
+- **[hamskey.com](http://www.hamskey.com/2024/01/modification-of-si4732-a10-for-full-hf.html)** - Hardware modification guide for SI4732-A10 on UV-K5
+
 ## Table of Contents
 
+* [Hardware Modifications Required](#hardware-modifications-required)
+* [What Was Changed](#what-was-changed)
+* [Resources Used](#resources-used)
 * [Main Features](#main-features)
 * [Manual](#manual)
 * [Radio Performance](#radio-performance)
@@ -121,6 +191,7 @@ You'll find the options at the top of "Makefile" ('0' = disable, '1' = enable) .
 | ENABLE_BLMIN_TMP_OFF | additional function for configurable buttons that toggles `BLMin` on and off wihout saving it to the EEPROM |
 | ENABLE_SCAN_RANGES | scan range mode for frequency scanning, see wiki for instructions (radio operation -> frequency scanning) |
 | ENABLE_DIGITAL_MODULATION | additional `DIG` (flat response) demodulation option for digital modes (requires HW mod for true flat response) |
+| ENABLE_SI4732 | use SI4732 module instead of BK1080 for FM/AM/SSB reception (requires HW mod) |
 |🧰 **DEBUGGING** ||
 | ENABLE_AM_FIX_SHOW_DATA| displays settings used by  AM-fix when AM transmission is received |
 | ENABLE_AGC_SHOW_DATA | displays AGC settings |
