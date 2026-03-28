@@ -172,4 +172,9 @@ void     RADIO_SendCssTail(void);
 void     RADIO_PrepareCssTX(void);
 void     RADIO_SendEndOfTransmission(void);
 
+#ifdef ENABLE_SI4732
+extern bool hasSI;
+void     RADIO_HasSi(void);
+#endif
+
 #endif

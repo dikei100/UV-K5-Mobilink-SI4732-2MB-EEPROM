@@ -252,9 +252,21 @@ typedef struct {
 	uint8_t               S0_LEVEL;
 	uint8_t               S9_LEVEL;
 #endif
+	uint8_t               EEPROM_TYPE;
 } EEPROM_Config_t;
 
 extern EEPROM_Config_t gEeprom;
+
+#ifdef ENABLE_SI4732
+	#define PATCH_SIZE      15832
+	#define PATCH_PREAMBULE {21, 0, 15, 224, 242, 115, 118, 47}
+
+	extern bool isPatchPresent;
+	void SETTINGS_checkSSBPatch(void);
+#endif
+
+uint32_t SETTINGS_GetEEPROMSize(void);
+uint16_t SETTINGS_GetPageSize(void);
 
 void     SETTINGS_InitEEPROM(void);
 void     SETTINGS_LoadCalibration(void);

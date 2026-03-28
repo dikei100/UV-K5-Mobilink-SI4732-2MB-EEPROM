@@ -26,6 +26,9 @@
 #include "bsp/dp32g030/gpio.h"
 #include "dcs.h"
 #include "driver/bk4819.h"
+#ifdef ENABLE_SI4732
+	#include "driver/i2c.h"
+#endif
 #include "driver/eeprom.h"
 #include "driver/gpio.h"
 #include "driver/system.h"
@@ -1118,3 +1121,22 @@ void RADIO_PrepareCssTX(void)
 		RADIO_SendCssTail();
 	RADIO_SetupRegisters(true);
 }
+
+#ifdef ENABLE_SI4732
+bool hasSI = false;
+
+void RADIO_HasSi(void)
+{
+	// Detect SI4732 by reading BK1080 register 1 via I2C.
+	// BK1080 returns 0x1080 in register 1; anything else means SI4732 is present.
+	uint8_t Value[2];
+	I2C_Start();
+	I2C_Write(0x80);
+	I2C_Write((1 << 1) | 1);  // register 1, read
+	I2C_ReadBuffer(Value, sizeof(Value));
+	I2C_Stop();
+
+	uint16_t reg1 = (Value[0] << 8) | Value[1];
+	hasSI = (reg1 != 0x1080);
+}
+#endif

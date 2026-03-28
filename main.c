@@ -96,6 +96,11 @@ void Main(void)
 	SETTINGS_WriteBuildOptions();
 	SETTINGS_LoadCalibration();
 
+#ifdef ENABLE_SI4732
+	RADIO_HasSi();
+	SETTINGS_checkSSBPatch();
+#endif
+
 	RADIO_ConfigureChannel(0, VFO_CONFIGURE_RELOAD);
 	RADIO_ConfigureChannel(1, VFO_CONFIGURE_RELOAD);
 

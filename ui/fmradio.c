@@ -19,7 +19,9 @@
 #include <string.h>
 
 #include "app/fm.h"
+#ifndef ENABLE_SI4732
 #include "driver/bk1080.h"
+#endif
 #include "driver/st7565.h"
 #include "external/printf/printf.h"
 #include "misc.h"
@@ -37,11 +39,19 @@ void UI_DisplayFM(void)
 
 	UI_PrintString("FM", 2, 0, 0, 8);
 
-	sprintf(String, "%d%s-%dM", 
+	#ifdef ENABLE_SI4732
+	sprintf(String, "%d%s-%dM",
+		640/10,
+		gEeprom.FM_Band == 0 ? ".5" : "",
+		1080/10
+		);
+	#else
+	sprintf(String, "%d%s-%dM",
 		BK1080_GetFreqLoLimit(gEeprom.FM_Band)/10,
 		gEeprom.FM_Band == 0 ? ".5" : "",
 		BK1080_GetFreqHiLimit(gEeprom.FM_Band)/10
 		);
+	#endif
 	
 	UI_PrintStringSmallNormal(String, 1, 0, 6);
 

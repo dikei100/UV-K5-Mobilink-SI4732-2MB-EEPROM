@@ -32,7 +32,11 @@
 #include "audio.h"
 #include "bsp/dp32g030/gpio.h"
 #ifdef ENABLE_FMRADIO
-	#include "driver/bk1080.h"
+	#ifdef ENABLE_SI4732
+		#include "driver/si473x.h"
+	#else
+		#include "driver/bk1080.h"
+	#endif
 #endif
 #include "driver/bk4819.h"
 #include "driver/gpio.h"
@@ -378,14 +382,22 @@ static void ACTION_Scan_FM(bool bRestart)
 		gFM_AutoScan = true;
 		gFM_ChannelPosition = 0;
 		FM_EraseChannels();
+		#ifdef ENABLE_SI4732
+		freq = 640;
+		#else
 		freq = BK1080_GetFreqLoLimit(gEeprom.FM_Band);
+		#endif
 	} else {
 		gFM_AutoScan = false;
 		gFM_ChannelPosition = 0;
 		freq = gEeprom.FM_FrequencyPlaying;
 	}
 
+	#ifdef ENABLE_SI4732
+	RSQ_GET();
+	#else
 	BK1080_GetFrequencyDeviation(freq);
+	#endif
 	FM_Tune(freq, 1, bRestart);
 
 #ifdef ENABLE_VOICE

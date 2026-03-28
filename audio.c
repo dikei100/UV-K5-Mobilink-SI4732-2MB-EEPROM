@@ -20,7 +20,11 @@
 #include "audio.h"
 #include "bsp/dp32g030/gpio.h"
 #ifdef ENABLE_FMRADIO
-	#include "driver/bk1080.h"
+	#ifdef ENABLE_SI4732
+		#include "driver/si473x.h"
+	#else
+		#include "driver/bk1080.h"
+	#endif
 #endif
 #include "driver/bk4819.h"
 #include "driver/gpio.h"
@@ -58,7 +62,11 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
 
 #ifdef ENABLE_FMRADIO
 	if (gFmRadioMode)
+		#ifdef ENABLE_SI4732
+		SI47XX_SetVolume(0);
+		#else
 		BK1080_Mute(true);
+		#endif
 #endif
 
 	AUDIO_AudioPathOff();
@@ -157,7 +165,11 @@ void AUDIO_PlayBeep(BEEP_Type_t Beep)
 
 #ifdef ENABLE_FMRADIO
 	if (gFmRadioMode)
+		#ifdef ENABLE_SI4732
+		SI47XX_SetVolume(63);
+		#else
 		BK1080_Mute(false);
+		#endif
 #endif
 
 	if (gCurrentFunction == FUNCTION_POWER_SAVE && gRxIdleMode)
@@ -260,7 +272,11 @@ void AUDIO_PlaySingleVoice(bool bFlag)
 
 		#ifdef ENABLE_FMRADIO
 			if (gFmRadioMode)
+				#ifdef ENABLE_SI4732
+				SI47XX_SetVolume(0);
+				#else
 				BK1080_Mute(true);
+				#endif
 		#endif
 
 		AUDIO_AudioPathOn();
@@ -284,7 +300,11 @@ void AUDIO_PlaySingleVoice(bool bFlag)
 
 			#ifdef ENABLE_FMRADIO
 				if (gFmRadioMode)
+					#ifdef ENABLE_SI4732
+					SI47XX_SetVolume(63);
+					#else
 					BK1080_Mute(false);
+					#endif
 			#endif
 
 			if (!gEnableSpeaker)
@@ -425,7 +445,11 @@ void AUDIO_PlayQueuedVoice(void)
 
 	#ifdef ENABLE_FMRADIO
 		if (gFmRadioMode)
+			#ifdef ENABLE_SI4732
+			SI47XX_SetVolume(63);
+			#else
 			BK1080_Mute(false);
+			#endif
 	#endif
 
 	if (!gEnableSpeaker)

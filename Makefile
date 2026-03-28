@@ -41,6 +41,7 @@ ENABLE_BYP_RAW_DEMODULATORS   ?= 0
 ENABLE_BLMIN_TMP_OFF          ?= 0
 ENABLE_SCAN_RANGES            ?= 1
 ENABLE_DIGITAL_MODULATION     ?= 0
+ENABLE_SI4732                 ?= 1
 
 # ---- DEBUGGING ----
 ENABLE_AM_FIX_SHOW_DATA       ?= 0
@@ -86,8 +87,12 @@ ifeq ($(ENABLE_UART),1)
 	OBJS += driver/aes.o
 endif
 OBJS += driver/backlight.o
+ifeq ($(ENABLE_SI4732),1)
+	OBJS += driver/si473x.o
+else
 ifeq ($(ENABLE_FMRADIO),1)
 	OBJS += driver/bk1080.o
+endif
 endif
 OBJS += driver/bk4819.o
 ifeq ($(filter $(ENABLE_AIRCOPY) $(ENABLE_UART),1),1)
@@ -266,6 +271,9 @@ ifeq ($(ENABLE_AIRCOPY),1)
 endif
 ifeq ($(ENABLE_FMRADIO),1)
 	CFLAGS += -DENABLE_FMRADIO
+endif
+ifeq ($(ENABLE_SI4732),1)
+	CFLAGS += -DENABLE_SI4732
 endif
 ifeq ($(ENABLE_UART),1)
 	CFLAGS += -DENABLE_UART

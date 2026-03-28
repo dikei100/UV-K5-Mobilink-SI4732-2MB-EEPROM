@@ -27,7 +27,9 @@
 #include "driver/adc.h"
 #include "driver/backlight.h"
 #ifdef ENABLE_FMRADIO
-	#include "driver/bk1080.h"
+	#ifndef ENABLE_SI4732
+		#include "driver/bk1080.h"
+	#endif
 #endif
 
 #include "driver/crc.h"
@@ -495,7 +497,9 @@ void BOARD_Init(void)
 	BOARD_ADC_Init();
 	ST7565_Init();
 #ifdef ENABLE_FMRADIO
+	#ifndef ENABLE_SI4732
 	BK1080_Init0();
+	#endif
 #endif
 
 #if defined(ENABLE_UART) || defined(ENABLED_AIRCOPY)

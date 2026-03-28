@@ -46,7 +46,11 @@
 #include "bsp/dp32g030/gpio.h"
 #include "driver/backlight.h"
 #ifdef ENABLE_FMRADIO
-	#include "driver/bk1080.h"
+	#ifdef ENABLE_SI4732
+		#include "driver/si473x.h"
+	#else
+		#include "driver/bk1080.h"
+	#endif
 #endif
 #include "driver/bk4819.h"
 #include "driver/gpio.h"
@@ -424,7 +428,11 @@ void APP_StartListening(FUNCTION_Type_t function)
 
 #ifdef ENABLE_FMRADIO
 	if (gFmRadioMode)
+		#ifdef ENABLE_SI4732
+		SI47XX_PowerDown();
+		#else
 		BK1080_Init0();
+		#endif
 #endif
 
 	// clear the other vfo's rssi level (to hide the antenna symbol)
